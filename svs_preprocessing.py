@@ -1,10 +1,8 @@
 import os
-import matplotlib.pyplot as plt
 os.add_dll_directory('C:/Users/Oh Seung Hwan/PycharmProjects/Anogan/venv/Lib/site-packages/openslide-win64-20171122/bin')
 from openslide import OpenSlide
 import numpy as np
 from PIL import Image
-import shutil
 import cv2
 from pytictoc import TicToc
 
@@ -23,10 +21,17 @@ for i in t_list:
 
                 if not (os.path.isdir('D:/Anogan/img/'+i+'_2/'+flist+'/' + str(sflist))):
                     os.makedirs('D:/Anogan/img/'+i+'_2/'+flist+'/' + str(sflist))
-                if "FS" in eflist:
+                if "FS" in eflist or "Fs" in eflist:
                     t.tic()
                     img = OpenSlide('D:/Anogan/img/'+ i +'/' + str(flist) + '/' + str(sflist) +'/' + str(eflist))
-                    size0, size1, size2, size3 = img.level_dimensions
+
+                    if len(img.level_dimensions) > 3:
+                        size0, size1, size2, size3 = img.level_dimensions
+                    elif len(img.level_dimensions) > 2:
+                        size0, size1, size3 = img.level_dimensions
+                    else:
+                        size0, size3 = img.level_dimensions
+
                     image = np.asarray(img.get_thumbnail(size3))
                     image2 = np.asarray(img.get_thumbnail(size0))
                     ret, binary = cv2.threshold(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), 150, 255, cv2.THRESH_OTSU)
@@ -36,10 +41,17 @@ for i in t_list:
                     count = 0
                     for c in contours:
                         x, y, w, h = cv2.boundingRect(c)
-                        if (cv2.contourArea(c)) > 50000:
+                        if (cv2.contourArea(c)) > 5000:
                             count += 1
+                            print("있음")
+                            print(str(sflist))
                             pil_image = Image.fromarray(image2[(size0[1] // size3[1]) * y:(size0[1] // size3[1]) * y + (size0[1] // size3[1]) * h,(size0[0] // size3[0]) * x: (size0[0] // size3[0]) * x + (size0[0] // size3[0]) * w])
-                            pil_image.save('D:/Anogan/img/' + i + '_2/' + flist + '/' + str(sflist) + '/' + str(eflist) + '_'+str(count)+'.jpg')
+                            try:
+                                pil_image.save('D:/Anogan/img/' + i + '_2/' + flist + '/' + str(sflist) + '/' + str(eflist) + '_'+str(count)+'.jpg')
+                            except OSError as error:
+                                os.remove('D:/Anogan/img/' + i + '_2/' + flist + '/' + str(sflist) + '/' + str(eflist) + '_'+str(count)+'.jpg')
+                                pass
+
                     t.toc()
                 img = 0
                 image = 0
